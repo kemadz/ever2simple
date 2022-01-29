@@ -4,7 +4,7 @@ import sys
 import datetime
 import pytz
 from csv import DictWriter
-from cStringIO import StringIO
+from io import StringIO
 from dateutil.parser import parse
 from html2text import HTML2Text
 from lxml import etree
@@ -32,9 +32,9 @@ class EverConverter(object):
         try:
             parser = etree.XMLParser(huge_tree=True)
             xml_tree = etree.parse(enex_file, parser)
-        except (etree.XMLSyntaxError, ), e:
-            print 'Could not parse XML'
-            print e
+        except etree.XMLSyntaxError as e:
+            print('Could not parse XML')
+            print(e)
             sys.exit(1)
         return xml_tree
 
@@ -65,7 +65,10 @@ class EverConverter(object):
             note_dict['content'] = ''
             content = note.xpath('content')
             if content:
-                raw_text = content[0].text
+                raw_text = content[0].text.strip()
+                idx = raw_text.find('<en-note') + 1
+                idx = raw_text.find('<', idx)
+                raw_text = raw_text[idx:-10]
                 # TODO: Option to go to just plain text, no markdown
                 converted_text = self._convert_html_markdown(title, raw_text)
                 if self.fmt == 'csv':
@@ -78,7 +81,7 @@ class EverConverter(object):
 
     def convert(self):
         if not os.path.exists(self.enex_filename):
-            print "File does not exist: %s" % self.enex_filename
+            print("File does not exist: %s" % self.enex_filename)
             sys.exit(1)
         # TODO: use with here, but pyflakes barfs on it
         enex_file = open(self.enex_filename)
@@ -95,8 +98,7 @@ class EverConverter(object):
     def _convert_html_markdown(self, title, text):
         html2plain = HTML2Text(None, "")
         html2plain.feed("<h1>%s</h1>" % title)
-        html2plain.feed(text)
-        return html2plain.close()
+        return html2plain.handle(text)
 
     def _convert_csv(self, notes):
         if self.stdout:
@@ -123,7 +125,7 @@ class EverConverter(object):
             sys.stdout.write(json.dumps(notes, sort_keys=True, indent=4, separators=(',', ': ')))
         else:
             if os.path.exists(self.simple_filename) and not os.path.isdir(self.simple_filename):
-                print '"%s" exists but is not a directory. %s' % self.simple_filename
+                print('"%s" exists but is not a directory. %s' % self.simple_filename)
                 sys.exit(1)
             elif not os.path.exists(self.simple_filename):
                 os.makedirs(self.simple_filename)

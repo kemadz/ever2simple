@@ -16,7 +16,7 @@ def main():
     fmt = args.format
     filepath = os.path.expanduser(enex_file)
     if not os.path.exists(filepath):
-        print 'File does not exist: %s' % filepath
+        print('File does not exist: %s' % filepath)
         sys.exit(1)
     converter = EverConverter(filepath, simple_filename=output, fmt=fmt, epoch=args.epoch)
     converter.convert()
